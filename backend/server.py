@@ -129,7 +129,6 @@ def total_coins_value(symbol):
 def add_transaction():
     name = request.json["name"]
     symbol = request.json["symbol"]
-    
     type = request.json["type"]
     value_usd = float(request.json["value_usd"])
     purchased_price = float(request.json["purchased_price"])
@@ -137,63 +136,30 @@ def add_transaction():
     coins = float(request.json["coins"])
     conn = postgreSQL_pool.getconn()
     cur = conn.cursor()
-
- #   cur.execute(f"SELECT SUM(value_usd) as total_value,SUM(coins) as total_coins FROM transactions where status!='delete' and symbol = '{symbol}' and type='buy'")
-
-  #  entry = cur.fetchall()
- #   dict_entry = {}
-
-  #  for entry in entry:
-   #     dict_entry["total_value"] = entry[0]
-    #    dict_entry["total_coins"] = entry[1]
-    coin_details = total_coins_value(symbol)
-
-#   cur.execute(f"SELECT SUM(value_usd),SUM(coins) FROM transactions WHERE symbol = '{symbol}' and status!='delete' and type='buy' group by symbol")
- #   entry = cur.fetchall()
     
+    coin_details = total_coins_value(symbol)
     if type == "sell":
-    #    for entry in entry:
         if coin_details["coins"]>=coins and coin_details["total_value"]>=value_usd:
             cur.execute(f"INSERT INTO transactions (name,symbol,type,value_usd,purchased_price,date,coins,status) VALUES ('{name}','{symbol}','{type}',{value_usd},{purchased_price},'{date}',{coins},'active')")
             conn.commit()
             return jsonify(request.json)
-  #  if entry[0] >= value_usd and entry[1] >= coins:
-        
-           #     add_transaction = f"INSERT INTO transactions (name, symbol,type, value_usd, purchased_price, date, coins) VALUES ('{name}', '{symbol}' , '{type}', {value_usd}, {purchased_price}, '{date}', {coins}) RETURNING *"
-          #      cur.execute(add_transaction)
-         #       update_total_transactions = f"Update total_transaction_details set (total_value, total_coins) = (select SUM(value_usd),SUM(coins) FROM transactions where status!='delete' and type='buy' and symbol='{symbol}' GROUP BY symbol) where symbol = '{symbol}'"
-         #       cur.execute(update_total_transactions)
-         #       conn.commit()
-    
-                #conn.commit()
-            #return jsonify(request.json)
+
         else:
-        
-        
-        
-        
-             return "You cannot sell more than you have"
+            return "You cannot sell more than you have"
 
     elif type=="buy":
         add_transaction = f"INSERT INTO transactions (name, symbol,type, value_usd, purchased_price, date, coins) VALUES ('{name}', '{symbol}' , '{type}', {value_usd}, {purchased_price}, '{date}', {coins}) RETURNING *"
         cur.execute(add_transaction)
     
         conn.commit()
-       
-    #    update_total_transactions = f"Update total_transaction_details set (symbol, total_value, total_coins) = (select symbol, SUM(value_usd),SUM(coins) FROM transactions where status!='delete' and type='buy' and symbol='{symbol}' GROUP BY symbol) where symbol = '{symbol}'"
-   #     cur.execute(update_total_transactions)
-    #    conn.commit()
-
         return jsonify(request.json)
         
-                
     else:
         return "Invalid transaction type, please enter buy or sell"
 
 @app.route("/transactions", methods=["DELETE"])
 def delete_transaction():
     id = request.json["id"]
- #   symbol = request.json["symbol"]
     conn = postgreSQL_pool.getconn()
     cur = conn.cursor()
     delete_transaction = f"Update transactions set status='delete' where id={id}"
@@ -202,8 +168,6 @@ def delete_transaction():
     cur.execute(update_seq)
     reset_seq = f"UPDATE transactions SET id = DEFAULT;"
     cur.execute(reset_seq)
- #   update_total_transactions = f"Update total_transaction_details set (symbol, total_value, total_coins) = (select symbol, SUM(value_usd),SUM(coins) FROM transactions where status!='delete' and type='buy' GROUP BY symbol) where symbol = '{symbol}'"
-  #  cur.execute(update_total_transactions)
     conn.commit()
     return jsonify(request.json)
 
