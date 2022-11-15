@@ -11,7 +11,7 @@ from psycopg2 import pool
 price_url = "https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd"
 
 postgreSQL_pool = pool.SimpleConnectionPool(
-    1,20,database="cryptodb", user="docker", password="docker", host="127.0.0.1"
+    1,300,database="cryptodb", user="docker", password="docker", host="127.0.0.1"
 )
 
 app = Flask(__name__)
