@@ -78,8 +78,7 @@ def get_details_coinwise():
 
     }
 
-    get_response = {}
-
+    get_response =  []  
     for symbol in collection:
         response = requests.get(f"{price_url}&ids={symbol_coin_mapping[symbol]}").json()
         live_price = response[symbol_coin_mapping[symbol]]["usd"]
@@ -88,7 +87,7 @@ def get_details_coinwise():
         
         collection[symbol]["total_equity"] = float(collection[symbol]["coins"]) * live_price
 
-        get_response.update({symbol: {
+        get_response.append({symbol: {
             "symbol": symbol,
             "coins": collection[symbol]["coins"],
             "total_value": collection[symbol]["total_value"],
@@ -97,7 +96,7 @@ def get_details_coinwise():
             "live_price": live_price
         }})
     
-        return jsonify(get_response)
+    return jsonify(get_response)
 
 
 def total_coins_value(symbol):
@@ -139,8 +138,8 @@ def add_transaction():
     
     coin_details = total_coins_value(symbol)
     if type == "sell":
-        if coin_details["coins"]>=coins and coin_details["total_value"]>=value_usd:
-            cur.execute(f"INSERT INTO transactions (name,symbol,type,value_usd,purchased_price,date,coins,status) VALUES ('{name}','{symbol}','{type}',{value_usd},{purchased_price},'{date}',{coins},'active')")
+        if coin_details["total_value"]>=value_usd:
+            cur.execute(f"INSERT INTO transactions (name,symbol,type,value_usd,purchased_price,date,coins) VALUES ('{name}','{symbol}','{type}',{value_usd},{purchased_price},'{date}',{coins})")
             conn.commit()
             return jsonify(request.json)
 
@@ -172,8 +171,3 @@ def delete_transaction():
     return jsonify(request.json)
 
 app.run(debug=True, port=5000)
-
-
-
-
-
