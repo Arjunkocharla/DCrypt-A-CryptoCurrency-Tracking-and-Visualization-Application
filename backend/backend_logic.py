@@ -19,8 +19,6 @@ class Transaction:
 
 
 
-
-
 def convert_entry_to_transaction(entry):
     return {
         "id": entry[0],

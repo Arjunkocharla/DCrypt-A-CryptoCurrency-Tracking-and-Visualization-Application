@@ -7,6 +7,8 @@ from backend_logic import buy, convert_entry_to_transaction, sell
 from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
 from psycopg2 import pool
+from sql_commands import get_transactions, get_detail_coinwise;
+
 
 price_url = "https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd"
 
@@ -29,7 +31,7 @@ def get_transaction():
     conn = postgreSQL_pool.getconn()
     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM transactions where status!='delete'")
+    cur.execute(get_transactions)
     entry = cur.fetchall()
 
     transactions = defaultdict(list)
@@ -47,7 +49,7 @@ def get_details_coinwise():
     )
     conn = postgreSQL_pool.getconn()
     cur = conn.cursor()
-    cur.execute(f"SELECT  symbol,type, SUM(value_usd)/100 as total_value,SUM(coins) as total_coins FROM transactions where status!='delete' GROUP BY symbol, type")
+    cur.execute(get_detail_coinwise)
     entry = cur.fetchall()
     for entry in entry:
         coin = entry[0]
