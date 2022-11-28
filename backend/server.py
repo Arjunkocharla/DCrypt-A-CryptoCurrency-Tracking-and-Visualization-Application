@@ -7,7 +7,7 @@ from backend_logic import buy, convert_entry_to_transaction, sell
 from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
 from psycopg2 import pool
-from sql_commands import get_transactions, get_detail_coinwise;
+# from sql_commands import get_transactions, get_detail_coinwise;
 
 
 price_url = "https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd"
@@ -25,18 +25,23 @@ app.config['postgreSQL_pool'] = postgreSQL_pool
 def health_check():
     return "DataBase is up and running!!"
 
-@app.route("/transactions", methods=["GET"])
-@cross_origin()
-def get_transaction():
-    conn = postgreSQL_pool.getconn()
-    cur = conn.cursor()
+@app.route("/transactions")
 
-    cur.execute(get_transactions)
+@cross_origin()
+
+def get_transaction():
+    
+    cur = postgreSQL_pool.getconn().cursor()
+
+    cur.execute(f"select * from transactions where status!='delete' order by date desc limit 15")
+    
     entry = cur.fetchall()
+    cur.close()
+    
 
     transactions = defaultdict(list)
-    for entry in entry:
-        transactions[entry[1]].append(convert_entry_to_transaction(entry))
+    for item in entry:
+        transactions[item[1]].append(convert_entry_to_transaction(item))
 
     return jsonify(transactions)
 
@@ -49,8 +54,9 @@ def get_details_coinwise():
     )
     conn = postgreSQL_pool.getconn()
     cur = conn.cursor()
-    cur.execute(get_detail_coinwise)
+    cur.execute(f"SELECT  symbol,type, SUM(value_usd)/100 as total_value,SUM(coins) as total_coins FROM transactions where status!='delete' GROUP BY symbol, type")
     entry = cur.fetchall()
+    
     for entry in entry:
         coin = entry[0]
         transaction_type = entry[1]
@@ -98,6 +104,7 @@ def get_details_coinwise():
             "live_price": live_price
         }})
     
+    
     return jsonify(get_response)
 
 
@@ -108,6 +115,7 @@ def total_coins_value(symbol):
     conn = postgreSQL_pool.getconn()
     cur = conn.cursor()
     cur.execute(f"SELECT  type, SUM(value_usd) as total_value,SUM(coins) as total_coins FROM transactions where status!='delete' and symbol='{symbol}' GROUP BY symbol, type")
+   
     entry = cur.fetchall()
     for entry in entry:
         
@@ -123,6 +131,7 @@ def total_coins_value(symbol):
             if transaction_coins>=coin_dict["coins"]:
                 coin_dict["coins"] -= transaction_coins
                 coin_dict["total_value"] -= transaction_value
+    conn.close()       
     return coin_dict
 
     
@@ -153,9 +162,12 @@ def add_transaction():
         cur.execute(add_transaction)
     
         conn.commit()
+        conn.close()
         return jsonify(request.json)
         
+        
     else:
+        conn.close()
         return "Invalid transaction type, please enter buy or sell"
 
 @app.route("/transactions", methods=["DELETE"])
@@ -170,6 +182,7 @@ def delete_transaction():
     reset_seq = f"UPDATE transactions SET id = DEFAULT;"
     cur.execute(reset_seq)
     conn.commit()
+    conn.close()
     return jsonify(request.json)
 
 app.run(debug=True, port=5000)
